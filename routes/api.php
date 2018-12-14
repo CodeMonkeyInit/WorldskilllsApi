@@ -23,7 +23,6 @@ Route::get('/posts', 'PostsController@index');
 Route::get('/posts/{id}', 'PostsController@show');
 
 Route::post('/posts/{id}/comments', 'PostsController@addComment');
-Route::post('/posts/{id}/comments/{commentId}', 'PostsController@removeComment');
+Route::middleware('checkAdmin')->delete('/posts/{id}/comments/{commentId}', 'PostsController@removeComment');
 
-
-
+Route::get('posts/tag/{tagName}', 'PostsController@searchByTag');

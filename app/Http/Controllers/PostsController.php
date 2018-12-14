@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Comment;
+use App\Http\Middleware\CheckAdmin;
 use App\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -9,6 +11,8 @@ use Validator;
 
 class PostsController extends Controller
 {
+    const DateFormat = "H:i d.m.Y";
+
     /**
      * Display a listing of the resource.
      *
@@ -16,7 +20,13 @@ class PostsController extends Controller
      */
     public function index()
     {
-        return response()->setStatusCode(200, "List posts")->json(Post::all());
+        $posts = Post::all();
+
+        foreach ($posts as $post){
+            $post->tags = explode(',',$post->tags);
+        }
+
+        return $this->jsonResponse($posts, 200, "List posts");
     }
 
     /**
@@ -36,9 +46,7 @@ class PostsController extends Controller
             $response["status"] = false;
             $response["message"] = $validator->errors();
 
-            return response()
-                ->setStatusCode(400, "Creating error")
-                ->json($response);
+            return $this->jsonResponse($response, 400, "Creating error");
         }
 
         $newPost = new Post();
@@ -48,21 +56,10 @@ class PostsController extends Controller
             return response("Error while saving data in db", 500);
         }
 
-        return response()
-            ->setStatusCode(201, "Successful creation")
-            ->json(["status" => true, "post_id" => $newPost->id]);
-    }
-
-    public function addComment($id, Request $request)
-    {
+        return $this->jsonResponse(["status" => true, "post_id" => $newPost->id],
+            201, "Successful creation");
 
     }
-
-    public function removeComment($postId, $commentId, Request $request)
-    {
-
-    }
-
 
     /**
      * Display the specified resource.
@@ -72,18 +69,18 @@ class PostsController extends Controller
      */
     public function show($id)
     {
-        $post = Post::find($id);
+        $post = Post::with('comments')->find($id);
 
         if (!$post)
         {
-            return response()->setStatusCode(404, "Post not found")->json([
+            return $this->jsonResponse([
                 "message" => "Post not found"
-            ]);
+            ], 404, "Post not found");
         }
 
-        $post->comments = $post->comments->toArray();
+        $post->tags = explode(',',$post->tags);
 
-        return $post;
+        return $this->jsonResponse($post, 200, "View post");
     }
 
     /**
@@ -99,25 +96,26 @@ class PostsController extends Controller
 
         if (!$post)
         {
-            return response()->setStatusCode(404, "Not found");
+            return $this->jsonResponse(null, 404, "Not found");
         }
 
-        $validator = $this->createValidator($request);
+        $validator = $this->createValidator($request, true);
 
         if ($validator->fails())
         {
             $response["status"] = false;
             $response["message"] = $validator->errors();
 
-            return response()
-                ->setStatusCode(400, "Editing error")
-                ->json($response);
+            return $this->jsonResponse($response, 400, "Editing error");
         }
 
         if (!$this->createOrUpdatePost($request, $post))
             return response("Error while trying to save data in db", 500);
 
-        return response()->setStatusCode(201, "Successful creation");
+
+        $post->tags = explode(',',$post->tags);
+
+        return $this->jsonResponse(["status" => true, "post" => $post], 201, "Successful creation");
     }
 
     /**
@@ -132,9 +130,10 @@ class PostsController extends Controller
 
         if (!$post)
         {
-            return response()
-                ->setStatusCode(404, "Post not found")
-                ->json(["message" => "Post not found"]);
+
+            return $this->jsonResponse(["message" => "Post not found"],
+                404, "Post not found");
+
         }
 
         if (!$post->delete())
@@ -143,7 +142,71 @@ class PostsController extends Controller
         }
 
 
-        return response()->setStatusCode(201, "Successful delete")->json(["status" => true]);
+        return $this->jsonResponse(["status" => true], 201, "Successful delete");
+    }
+
+
+    public function addComment($id, Request $request)
+    {
+        $isAdmin = CheckAdmin::isAdmin($request);
+
+        $validator = Validator::make($request->all(), [
+            'author' => $isAdmin ? 'required' : '',
+            'comment' => 'required|max:255'
+        ]);
+
+        $response = [];
+
+        if ($validator->fails())
+        {
+            $response["status"] = false;
+            $response["message"] = $validator->errors();
+
+            return $this->jsonResponse($response, 400, 'Creating error');
+        }
+
+        $newComment = new Comment();
+
+        $newComment->post_id = $id;
+        $newComment->author = $isAdmin ? 'admin' : $request->author;
+        $newComment->comment = $request->comment;
+        $newComment->datatime = date(self::DateFormat);
+
+        $newComment->save();
+
+        return $this->jsonResponse(["status" => true], 201, 'Successful creation');
+    }
+
+    public function removeComment($postId, $commentId)
+    {
+        $post = Post::find($postId);
+
+        if (!$post)
+        {
+            return $this->jsonResponse(["message" => "Post not found"], 404, "Post not found");
+        }
+
+        $comment = Comment::find($commentId);
+
+        if (!$comment)
+        {
+            return $this->jsonResponse(["message" => "Comment not found"], 404, "Comment not found");
+        }
+
+        $comment->delete();
+
+        return $this->jsonResponse(["status" => true], 201, 'Successful delete');
+    }
+
+    public function searchByTag($tagName)
+    {
+        $posts = Post::where("tags", "like", '%' . $tagName . '%')->get();
+
+        foreach ($posts as $post){
+            $post->tags = explode(',',$post->tags);
+        }
+
+        return $this->jsonResponse(["body" => $posts], 200, "Found posts");
     }
 
     /**
@@ -153,18 +216,15 @@ class PostsController extends Controller
      */
     private function createOrUpdatePost(Request $request, $newPost): bool
     {
-        //todo validateTitle
         //I would consider using somekind of "mapper" in real code
         $newPost->title = $request->title;
         $newPost->anons = $request->anons;
 
-        $imagePath = 'post_images/' . str_random(10) . $request->image->name;
+        $newPost->image = $this->saveImageAndGetPath($request);
 
-        Storage::disk('local')->put($imagePath, $request->image);
+        $newPost->text = $request->text;
 
-        $newPost->image = $imagePath;
-
-        $newPost->datatime = date("");
+        $newPost->datatime = date(self::DateFormat);
 
         if ($request->has('tags'))
         {
@@ -176,20 +236,32 @@ class PostsController extends Controller
 
     /**
      * @param Request $request
+     * @param bool $forUpdate
      * @return mixed
      */
-    private function createValidator(Request $request)
+    private function createValidator(Request $request, $forUpdate = false)
     {
         $bytesInMegabyte = 1000000;
         $fileLimit = 2 * $bytesInMegabyte;
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required',
+            'title' => 'required' . (!$forUpdate ? '|unique:posts' : ''),
             'anons' => 'required',
             'text' => 'required',
-            'image' => "required|mimes: jpg,png|size:{$fileLimit}",
+            'image' => "required|mimes:jpeg,png|max:{$fileLimit}",
         ]);
         return $validator;
+    }
+
+    /**
+     * @param Request $request
+     * @return string
+     */
+    private function saveImageAndGetPath(Request $request): string
+    {
+        $imagePath = Storage::disk('post_images')->put('', $request->image);
+
+        return "post_images/" . $imagePath;
     }
 
 }

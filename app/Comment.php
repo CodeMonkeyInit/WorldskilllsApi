@@ -12,11 +12,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class Comment extends Model
 {
-    protected $primaryKey = 'comment_id';
+    protected $primaryKey = 'id';
 
 
     protected $hidden = [
-      'post_id'
+      'post_id', 'created_at', 'created_at'
     ];
 
     protected $fillable = [

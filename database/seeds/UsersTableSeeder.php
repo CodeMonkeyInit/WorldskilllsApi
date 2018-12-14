@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class UsersTableSeeder extends Seeder
 {
@@ -12,10 +13,9 @@ class UsersTableSeeder extends Seeder
     public function run()
     {
         DB::table('users')->insert([
-            'name' => "admin",
-            //TODO get bearer token size
+            'login' => "admin",
             'token' => str_random(50),
-            'password' => bcrypt('sakhalin2018'),
+            'password' => Hash::make('sakhalin2018'),
         ]);
     }
 }
