@@ -96,10 +96,10 @@ class PostsController extends Controller
 
         if (!$post)
         {
-            return $this->jsonResponse(null, 404, "Not found");
+            return $this->jsonResponse(["message" => "Advert not found"], 404, "Advert not found");
         }
 
-        $validator = $this->createValidator($request, true);
+        $validator = $this->createValidator($request);
 
         if ($validator->fails())
         {
@@ -151,11 +151,21 @@ class PostsController extends Controller
         $isAdmin = CheckAdmin::isAdmin($request);
 
         $validator = Validator::make($request->all(), [
-            'author' => $isAdmin ? 'required' : '',
+            'author' => !$isAdmin ? 'required' : '',
             'comment' => 'required|max:255'
         ]);
 
         $response = [];
+
+        $post = Post::find($id);
+
+        if (!$post)
+        {
+
+            return $this->jsonResponse(["message" => "Post not found"],
+                404, "Post not found");
+
+        }
 
         if ($validator->fails())
         {
@@ -236,16 +246,15 @@ class PostsController extends Controller
 
     /**
      * @param Request $request
-     * @param bool $forUpdate
      * @return mixed
      */
-    private function createValidator(Request $request, $forUpdate = false)
+    private function createValidator(Request $request)
     {
         $bytesInMegabyte = 1000000;
         $fileLimit = 2 * $bytesInMegabyte;
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required' . (!$forUpdate ? '|unique:posts' : ''),
+            'title' => 'required|unique:posts',
             'anons' => 'required',
             'text' => 'required',
             'image' => "required|mimes:jpeg,png|max:{$fileLimit}",

@@ -18,20 +18,23 @@ class LoginController extends Controller
             $user = User::where("login", "=", $request->login)
                 ->first();
 
-            if (!Hash::check($request->password, $user->password))
+            if($user)
             {
-                return $this->jsonResponse([
-                    "status" => false,
-                    "message" => "Invalid authorization data"
-                ], 401, "Invalid authorization data");
-            }
+                if (!Hash::check($request->password, $user->password))
+                {
+                    return $this->jsonResponse([
+                        "status" => false,
+                        "message" => "Invalid authorization data"
+                    ], 401, "Invalid authorization data");
+                }
 
-            return $this->jsonResponse([
-                [
-                    "status" => true,
-                    "token" => $user->token
-                ]
-            ], 200, "Successful authorization");
+                return $this->jsonResponse(
+                    [
+                        "status" => true,
+                        "token" => $user->token
+                    ]
+                    , 200, "Successful authorization");
+            }
         }
 
 
