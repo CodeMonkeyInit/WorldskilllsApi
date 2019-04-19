@@ -4,29 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Comment;
 use App\Http\Middleware\CheckAdmin;
-use App\Post;
+use App\Advert;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Validator;
 
-class PostsController extends Controller
+class AdvertsController extends Controller
 {
     const DateFormat = "H:i d.m.Y";
 
     /**
      * Display a listing of the resource.
      *
-     * @return Post[]|\Illuminate\Database\Eloquent\Collection
+     * @return Advert[]|\Illuminate\Database\Eloquent\Collection
      */
     public function index()
     {
-        $posts = Post::all();
+        $adverts = Advert::all();
 
-        foreach ($posts as $post){
-            $post->tags = explode(',',$post->tags);
+        foreach ($adverts as $advert){
+            $advert->tags = explode(',',$advert->tags);
         }
 
-        return $this->jsonResponse($posts, 200, "List posts");
+        return $this->jsonResponse($adverts, 200, "List adverts");
     }
 
     /**
@@ -49,14 +49,14 @@ class PostsController extends Controller
             return $this->jsonResponse($response, 400, "Creating error");
         }
 
-        $newPost = new Post();
+        $newAdvert = new Advert();
 
-        if (!$this->createOrUpdatePost($request, $newPost))
+        if (!$this->createOrUpdateAdvert($request, $newAdvert))
         {
             return response("Error while saving data in db", 500);
         }
 
-        return $this->jsonResponse(["status" => true, "post_id" => $newPost->id],
+        return $this->jsonResponse(["status" => true, "advert_id" => $newAdvert->id],
             201, "Successful creation");
 
     }
@@ -69,18 +69,18 @@ class PostsController extends Controller
      */
     public function show($id)
     {
-        $post = Post::with('comments')->find($id);
+        $advert = Advert::with('comments')->find($id);
 
-        if (!$post)
+        if (!$advert)
         {
             return $this->jsonResponse([
-                "message" => "Post not found"
-            ], 404, "Post not found");
+                "message" => "Advert not found"
+            ], 404, "Advert not found");
         }
 
-        $post->tags = explode(',',$post->tags);
+        $advert->tags = explode(',',$advert->tags);
 
-        return $this->jsonResponse($post, 200, "View post");
+        return $this->jsonResponse($advert, 200, "View advert");
     }
 
     /**
@@ -92,9 +92,9 @@ class PostsController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $post = Post::find($id);
+        $advert = Advert::find($id);
 
-        if (!$post)
+        if (!$advert)
         {
             return $this->jsonResponse(["message" => "Advert not found"], 404, "Advert not found");
         }
@@ -109,13 +109,13 @@ class PostsController extends Controller
             return $this->jsonResponse($response, 400, "Editing error");
         }
 
-        if (!$this->createOrUpdatePost($request, $post))
+        if (!$this->createOrUpdateAdvert($request, $advert))
             return response("Error while trying to save data in db", 500);
 
 
-        $post->tags = explode(',',$post->tags);
+        $advert->tags = explode(',',$advert->tags);
 
-        return $this->jsonResponse(["status" => true, "post" => $post], 201, "Successful creation");
+        return $this->jsonResponse(["status" => true, "advert" => $advert], 201, "Successful creation");
     }
 
     /**
@@ -126,17 +126,17 @@ class PostsController extends Controller
      */
     public function destroy($id)
     {
-        $post = Post::find($id);
+        $advert = Advert::find($id);
 
-        if (!$post)
+        if (!$advert)
         {
 
-            return $this->jsonResponse(["message" => "Post not found"],
-                404, "Post not found");
+            return $this->jsonResponse(["message" => "Advert not found"],
+                404, "Advert not found");
 
         }
 
-        if (!$post->delete())
+        if (!$advert->delete())
         {
             return response("Something went terrebly wrong", 500);
         }
@@ -157,13 +157,13 @@ class PostsController extends Controller
 
         $response = [];
 
-        $post = Post::find($id);
+        $advert = Advert::find($id);
 
-        if (!$post)
+        if (!$advert)
         {
 
-            return $this->jsonResponse(["message" => "Post not found"],
-                404, "Post not found");
+            return $this->jsonResponse(["message" => "Advert not found"],
+                404, "Advert not found");
 
         }
 
@@ -177,7 +177,7 @@ class PostsController extends Controller
 
         $newComment = new Comment();
 
-        $newComment->post_id = $id;
+        $newComment->advert_id = $id;
         $newComment->author = $isAdmin ? 'admin' : $request->author;
         $newComment->comment = $request->comment;
         $newComment->datatime = date(self::DateFormat);
@@ -187,13 +187,13 @@ class PostsController extends Controller
         return $this->jsonResponse(["status" => true], 201, 'Successful creation');
     }
 
-    public function removeComment($postId, $commentId)
+    public function removeComment($advertId, $commentId)
     {
-        $post = Post::find($postId);
+        $advert = Advert::find($advertId);
 
-        if (!$post)
+        if (!$advert)
         {
-            return $this->jsonResponse(["message" => "Post not found"], 404, "Post not found");
+            return $this->jsonResponse(["message" => "Advert not found"], 404, "Advert not found");
         }
 
         $comment = Comment::find($commentId);
@@ -210,38 +210,38 @@ class PostsController extends Controller
 
     public function searchByTag($tagName)
     {
-        $posts = Post::where("tags", "like", '%' . $tagName . '%')->get();
+        $adverts = Advert::where("tags", "like", '%' . $tagName . '%')->get();
 
-        foreach ($posts as $post){
-            $post->tags = explode(',',$post->tags);
+        foreach ($adverts as $advert){
+            $advert->tags = explode(',',$advert->tags);
         }
 
-        return $this->jsonResponse(["body" => $posts], 200, "Found posts");
+        return $this->jsonResponse(["body" => $adverts], 200, "Found adverts");
     }
 
     /**
      * @param Request $request
-     * @param $newPost
+     * @param $newAdvert
      * @return bool
      */
-    private function createOrUpdatePost(Request $request, $newPost): bool
+    private function createOrUpdateAdvert(Request $request, $newAdvert): bool
     {
         //I would consider using somekind of "mapper" in real code
-        $newPost->title = $request->title;
-        $newPost->anons = $request->anons;
+        $newAdvert->title = $request->title;
+        $newAdvert->number = $request->number;
 
-        $newPost->image = $this->saveImageAndGetPath($request);
+        $newAdvert->image = $this->saveImageAndGetPath($request);
 
-        $newPost->text = $request->text;
+        $newAdvert->text = $request->text;
 
-        $newPost->datatime = date(self::DateFormat);
+        $newAdvert->datatime = date(self::DateFormat);
 
         if ($request->has('tags'))
         {
-            $newPost->tags = $request->tags;
+            $newAdvert->tags = $request->tags;
         }
 
-        return $newPost->save();
+        return $newAdvert->save();
     }
 
     /**
@@ -254,7 +254,7 @@ class PostsController extends Controller
         $fileLimit = 2 * $bytesInMegabyte;
 
         $validator = Validator::make($request->all(), [
-            'title' => 'required|unique:posts',
+            'title' => 'required|unique:adverts',
             'anons' => 'required',
             'text' => 'required',
             'image' => "required|mimes:jpeg,png|max:{$fileLimit}",
@@ -268,9 +268,9 @@ class PostsController extends Controller
      */
     private function saveImageAndGetPath(Request $request): string
     {
-        $imagePath = Storage::disk('post_images')->put('', $request->image);
+        $imagePath = Storage::disk('advert_images')->put('', $request->image);
 
-        return "post_images/" . $imagePath;
+        return "advert_images/" . $imagePath;
     }
 
 }

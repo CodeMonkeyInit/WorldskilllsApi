@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreatePostsTable extends Migration
+class CreateAdvertsTable extends Migration
 {
     /**
      * Run the migrations.
@@ -17,7 +17,7 @@ class CreatePostsTable extends Migration
             $table->increments('id');
             $table->timestamps();
             $table->text('title')->unique();
-            $table->text('anons');
+            $table->text('number');
             $table->text('text');
             $table->string('tags')->nullable();
             $table->string('image');

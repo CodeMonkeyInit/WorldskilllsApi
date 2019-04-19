@@ -10,10 +10,10 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Post extends Model
+class Advert extends Model
 {
     protected $fillable = [
-        'title', 'anons', 'text', 'tags', 'image', 'datatime'
+        'title', 'number', 'text', 'tags', 'image', 'datatime'
     ];
 
     public function comments(){

@@ -16,10 +16,10 @@ class Comment extends Model
 
 
     protected $hidden = [
-      'post_id', 'created_at', 'created_at'
+      'advert_id', 'created_at', 'created_at'
     ];
 
     protected $fillable = [
-        'post_id', 'datatime', 'author', 'comment'
+        'advert_id', 'datatime', 'author', 'comment'
     ];
 }
