@@ -19,11 +19,11 @@ class CreateCommentsTable extends Migration
             $table->string('datatime');
             $table->string('author');
             $table->string('comment');
-            $table->unsignedInteger('post_id');
+            $table->unsignedInteger('advert_id');
 
             $table->foreign('advert_id')
                 ->references('id')
-                ->on("posts")
+                ->on("adverts")
                 ->onDelete('cascade');
         });
     }

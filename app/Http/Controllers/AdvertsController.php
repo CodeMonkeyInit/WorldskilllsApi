@@ -255,7 +255,7 @@ class AdvertsController extends Controller
 
         $validator = Validator::make($request->all(), [
             'title' => 'required|unique:adverts',
-            'anons' => 'required',
+            'number' => 'required',
             'text' => 'required',
             'image' => "required|mimes:jpeg,png|max:{$fileLimit}",
         ]);

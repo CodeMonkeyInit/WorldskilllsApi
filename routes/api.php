@@ -14,15 +14,15 @@
 
 Route::post('/auth', 'LoginController@login');
 
-Route::middleware('checkAdmin')->post('/posts', 'PostsController@store');
+Route::middleware('checkAdmin')->post('/adverts', 'AdvertsController@store');
 
-Route::middleware('checkAdmin')->post('/posts/{id}', 'PostsController@update');
-Route::middleware('checkAdmin')->delete('/posts/{id}', 'PostsController@destroy');
+Route::middleware('checkAdmin')->post('/adverts/{id}', 'AdvertsController@update');
+Route::middleware('checkAdmin')->delete('/adverts/{id}', 'AdvertsController@destroy');
 
-Route::get('/posts', 'PostsController@index');
-Route::get('/posts/{id}', 'PostsController@show');
+Route::get('/adverts', 'AdvertsController@index');
+Route::get('/adverts/{id}', 'AdvertsController@show');
 
-Route::post('/posts/{id}/comments', 'PostsController@addComment');
-Route::middleware('checkAdmin')->delete('/posts/{id}/comments/{commentId}', 'PostsController@removeComment');
+Route::post('/adverts/{id}/comments', 'AdvertsController@addComment');
+Route::middleware('checkAdmin')->delete('/adverts/{id}/comments/{commentId}', 'AdvertsController@removeComment');
 
-Route::get('posts/tag/{tagName}', 'PostsController@searchByTag');
+Route::get('adverts/tag/{tagName}', 'AdvertsController@searchByTag');

@@ -13,10 +13,10 @@ class CreateAdvertsTable extends Migration
      */
     public function up()
     {
-        Schema::create('posts', function (Blueprint $table) {
+        Schema::create('adverts', function (Blueprint $table) {
             $table->increments('id');
             $table->timestamps();
-            $table->text('title')->unique();
+            $table->text('title');
             $table->text('number');
             $table->text('text');
             $table->string('tags')->nullable();

@@ -53,10 +53,10 @@ return [
             'url' => env('APP_URL').'/storage',
             'visibility' => 'public',
         ],
-        'post_images' => [
+        'advert_images' => [
           'driver' => 'local',
-          'root' => storage_path('post_images'),
-          'url' => env('APP_URL') . '/post_images',
+          'root' => storage_path('advert_images'),
+          'url' => env('APP_URL') . '/advert_images',
           'visibility' => 'public'
         ],
         's3' => [
